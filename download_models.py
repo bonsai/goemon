@@ -8,7 +8,7 @@ def download_models():
         "glm-4-9b-chat": "THUDM/glm-4-9b-chat" # 例としてGLM-4を指定
     }
     
-    base_path = "/app/models"
+    base_path = "./models"
     os.makedirs(base_path, exist_ok=True)
     
     for name, repo_id in models.items():
