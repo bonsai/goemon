@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/skip2/go-qrcode"
 	"golang.ngrok.com/ngrok"
 	"golang.ngrok.com/ngrok/config"
 )
@@ -131,6 +132,14 @@ func StartWebServer(port int) {
 			fmt.Printf("\n====================================================\n")
 			fmt.Printf("NGROK TUNNEL ESTABLISHED!\n")
 			fmt.Printf("PUBLIC URL: %s\n", l.URL())
+
+			// QRコードの表示 (モバイル用)
+			qr, err := qrcode.New(l.URL()+"?pass=1234", qrcode.Medium)
+			if err == nil {
+				fmt.Printf("\nSCAN THIS QR TO OPEN ON MOBILE (Auto-Login):\n")
+				fmt.Println(qr.ToSmallString(false))
+			}
+
 			fmt.Printf("====================================================\n\n")
 			if err := http.Serve(l, mux); err != nil {
 				fmt.Printf("ngrok server closed: %v\n", err)
