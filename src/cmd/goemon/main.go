@@ -109,8 +109,6 @@ func main() {
 			fmt.Println("Foreman is running.")
 
 		// --- Development & Others ---
-		case "11":
-			cli.CreateADR()
 		case "0":
 			fmt.Println("Goodbye!")
 			return
@@ -144,7 +142,6 @@ func showMenu() {
 	fmt.Println("10. Start Foreman Agent")
 
 	fmt.Println("\n[ Development & Others ]")
-	fmt.Println("11. Create New ADR")
 	fmt.Println(" 0. Exit")
 	fmt.Println("=================================")
 }
