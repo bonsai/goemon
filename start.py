@@ -20,5 +20,5 @@ else:
 
 # --- 3. 実行権限の付与と起動 ---
 # スクリプト自体が重複チェック（Goのインストール、モデルの存在確認）を行っています
-!chmod +x kaggle-start.sh
-!bash kaggle-start.sh
+!chmod +x linux-start.sh
+!bash linux-start.sh

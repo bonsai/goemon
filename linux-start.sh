@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # =================================================================
-# Goemon Swarm Console - Kaggle Auto-Launcher
+# Goemon Swarm Console - Cloud Auto-Launcher (Kaggle/Colab)
 # =================================================================
 
-echo "Starting Goemon Swarm on Kaggle..."
+echo "Starting Goemon Swarm on Cloud Environment..."
 
-# 0. Go のインストール (Kaggle には標準で入っていないため)
+# 0. Go のインストール (標準で入っていない環境用)
 export GO_HOME="$HOME/opt/go"
 export PATH="$GO_HOME/bin:$PATH"
 
@@ -29,12 +29,21 @@ python3 download_models.py
 
 # 2. Go アプリケーションのビルド
 echo "Step 2: Building Goemon..."
-# ビルド済みバイナリがあり、かつソースに変更がない場合はスキップしたいが、
-# Kaggle 環境では毎回ビルドしても時間はかからないため、確実性を優先
-go build -o goemon src/cmd/goemon/main.go
-chmod +x goemon
+# 依存関係の解決
+go mod tidy || { echo "Failed to tidy go modules"; exit 1; }
+
+# カレントディレクトリを明示してビルド
+go build -v -o ./goemon src/cmd/goemon/main.go || { echo "Build failed!"; exit 1; }
+
+if [ -f "./goemon" ]; then
+    chmod +x ./goemon
+    echo "Build successful: ./goemon created."
+else
+    echo "Error: ./goemon was not created!"
+    exit 1
+fi
 
 # 3. Goemon 実行
 echo "Step 3: Launching Goemon Swarm..."
-# Kaggle の Linux 環境に合わせた実行
+# Linux 環境に合わせた実行
 ./goemon
