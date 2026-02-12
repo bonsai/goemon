@@ -9,8 +9,24 @@ except ImportError:
 # --- 1. 環境変数のセットアップ ---
 if IN_COLAB:
     print("Running on Google Colab")
-    os.environ['NGROK_AUTHTOKEN'] = userdata.get("NGROK_AUTHTOKEN")
-    os.environ['HF_TOKEN'] = userdata.get("HF_TOKEN")
+    from IPython import get_ipython
+    ipython = get_ipython()
+
+    def set_colab_env(env_name, secret_name):
+        try:
+            val = userdata.get(secret_name)
+            if val:
+                os.environ[env_name] = val
+                if ipython:
+                    ipython.run_line_magic('env', f'{env_name}={val}')
+                print(f"✅ {env_name} is set.")
+            else:
+                print(f"⚠️ {env_name} is NOT set in Colab Secrets.")
+        except Exception:
+            print(f"⚠️ Could not find secret {secret_name}")
+
+    set_colab_env('NGROK_AUTHTOKEN', 'NGROK_AUTHTOKEN')
+    set_colab_env('HF_TOKEN', 'HF_TOKEN')
     github_token = userdata.get("GITHUB_TOKEN")
 else:
     print("Not in Colab. Please use start.py for Kaggle.")
