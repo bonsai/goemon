@@ -29,8 +29,27 @@ func StartWebServer(port int) {
 	mux := http.NewServeMux()
 	mux.Handle("/outputs/", http.StripPrefix("/outputs/", http.FileServer(http.Dir(outputDir))))
 
-	// HTML Main Page
+	// HTML Main Page (With Simple Password Auth)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// モバイルからの簡易認証: URL パラメータに ?pass=1234 があればセッション維持（簡易的にクッキー使用）
+		pass := r.URL.Query().Get("pass")
+		if pass == "1234" {
+			http.SetCookie(w, &http.Cookie{Name: "auth", Value: "ok", Path: "/"})
+		}
+
+		// クッキーチェック
+		cookie, err := r.Cookie("auth")
+		if err != nil || cookie.Value != "ok" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprint(w, `<h2>Goemon Access Restricted</h2>
+				<form method="GET">
+					Enter Pass: <input type="password" name="pass">
+					<button type="submit">Unlock</button>
+				</form>
+				<p style="font-size:0.8em; color:gray;">Hint: Default pass is 1234</p>`)
+			return
+		}
+
 		images := getImages(outputDir)
 		tmpl, err := template.ParseFiles("src/core/web/templates/index.html")
 		if err != nil {
