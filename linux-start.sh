@@ -30,10 +30,18 @@ python3 download_models.py
 # 2. Go アプリケーションのビルド
 echo "Step 2: Building Goemon..."
 # 依存関係の解決
-go mod tidy
+go mod tidy || { echo "Failed to tidy go modules"; exit 1; }
 
-go build -o goemon src/cmd/goemon/main.go
-chmod +x goemon
+# カレントディレクトリを明示してビルド
+go build -v -o ./goemon src/cmd/goemon/main.go || { echo "Build failed!"; exit 1; }
+
+if [ -f "./goemon" ]; then
+    chmod +x ./goemon
+    echo "Build successful: ./goemon created."
+else
+    echo "Error: ./goemon was not created!"
+    exit 1
+fi
 
 # 3. Goemon 実行
 echo "Step 3: Launching Goemon Swarm..."
