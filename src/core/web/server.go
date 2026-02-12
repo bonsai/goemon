@@ -121,16 +121,14 @@ func StartWebServer(port int) {
 
 	// ngrok トンネルの開始 (NGROK_AUTHTOKEN がある場合のみ)
 	if token := os.Getenv("NGROK_AUTHTOKEN"); token != "" {
-		fmt.Println("NGROK_AUTHTOKEN found. Starting tunnel...")
-		go func() {
-			l, err := ngrok.Listen(context.Background(),
-				config.HTTPEndpoint(),
-				ngrok.WithAuthtoken(token),
-			)
-			if err != nil {
-				fmt.Printf("Failed to start ngrok: %v\n", err)
-				return
-			}
+		fmt.Println("NGROK_AUTHTOKEN found. Initializing tunnel...")
+		l, err := ngrok.Listen(context.Background(),
+			config.HTTPEndpoint(),
+			ngrok.WithAuthtoken(token),
+		)
+		if err != nil {
+			fmt.Printf("Failed to start ngrok: %v\n", err)
+		} else {
 			fmt.Printf("\n====================================================\n")
 			fmt.Printf("NGROK TUNNEL ESTABLISHED!\n")
 			fmt.Printf("PUBLIC URL: %s\n", l.URL())
@@ -141,12 +139,14 @@ func StartWebServer(port int) {
 				fmt.Printf("\nSCAN THIS QR TO OPEN ON MOBILE (Auto-Login):\n")
 				fmt.Println(qr.ToSmallString(false))
 			}
-
 			fmt.Printf("====================================================\n\n")
-			if err := http.Serve(l, mux); err != nil {
-				fmt.Printf("ngrok server closed: %v\n", err)
-			}
-		}()
+
+			go func() {
+				if err := http.Serve(l, mux); err != nil {
+					fmt.Printf("ngrok server closed: %v\n", err)
+				}
+			}()
+		}
 	} else {
 		fmt.Println("NGROK_AUTHTOKEN not set. Running on local port only.")
 	}
