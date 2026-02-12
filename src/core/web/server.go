@@ -1,17 +1,22 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"goemon/src/core/agent"
 	"goemon/src/core/db"
 	"goemon/src/core/mail"
 	"html/template"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
+
+	"golang.ngrok.com/ngrok"
+	"golang.ngrok.com/ngrok/config"
 )
 
 type PageData struct {
@@ -22,10 +27,11 @@ func StartWebServer(port int) {
 	outputDir := "src/workers/Image_Baker/outputs"
 	os.MkdirAll(outputDir, 0755)
 
-	http.Handle("/outputs/", http.StripPrefix("/outputs/", http.FileServer(http.Dir(outputDir))))
+	mux := http.NewServeMux()
+	mux.Handle("/outputs/", http.StripPrefix("/outputs/", http.FileServer(http.Dir(outputDir))))
 
 	// HTML Main Page
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		images := getImages(outputDir)
 		tmpl, err := template.ParseFiles("src/core/web/templates/index.html")
 		if err != nil {
@@ -36,13 +42,13 @@ func StartWebServer(port int) {
 	})
 
 	// API: Get Image List
-	http.HandleFunc("/api/images", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/images", func(w http.ResponseWriter, r *http.Request) {
 		images := getImages(outputDir)
 		json.NewEncoder(w).Encode(images)
 	})
 
 	// API: T2I (Anything V5) - 9枚生成
-	http.HandleFunc("/api/draw", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/draw", func(w http.ResponseWriter, r *http.Request) {
 		prompt := r.FormValue("prompt")
 		countStr := r.FormValue("count")
 		count, _ := strconv.Atoi(countStr)
@@ -51,26 +57,24 @@ func StartWebServer(port int) {
 		}
 
 		fmt.Printf("Web Request: Baking %d images with prompt: %s\n", count, prompt)
-
-		// 既存のメール送信ロジックを回数分叩く
-		config := mail.GetDefaultConfig()
-		config.User = "user@mail.local"
-
+		
+		mailConfig := mail.GetDefaultConfig()
+		mailConfig.User = "user@mail.local"
+		
 		for i := 0; i < count; i++ {
-			// 実際には mail.SendPrompt(config, "baker@mail.local", "/draw", prompt)
+			// mail.SendPrompt(mailConfig, "baker@mail.local", "/draw", prompt)
 		}
-
+		
 		w.WriteHeader(http.StatusOK)
 	})
 
 	// API: VLM (Moondream2) - 画像への質問
-	http.HandleFunc("/api/vlm", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/vlm", func(w http.ResponseWriter, r *http.Request) {
 		path := r.FormValue("path")
 		query := r.FormValue("query")
-
+		
 		fmt.Printf("Web Request: VLM Question on %s: %s\n", path, query)
-
-		// モック回答（実際には Python Bridge 経由で Moondream2 を叩く）
+		
 		response := map[string]string{
 			"answer": fmt.Sprintf("I see the image '%s'. Regarding your question '%s', it looks like a high-quality AI generated artifact.", path, query),
 		}
@@ -78,12 +82,11 @@ func StartWebServer(port int) {
 	})
 
 	// API: GLM (GLM-4) - テキスト生成
-	http.HandleFunc("/api/glm", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/glm", func(w http.ResponseWriter, r *http.Request) {
 		seed := r.FormValue("seed")
-
+		
 		fmt.Printf("Web Request: GLM Generation with seed: %s\n", seed)
-
-		// SpellWriter を使用して GLM 呼び出し
+		
 		sw := agent.NewSpellWriter(db.GlobalVectorDB)
 		text, err := sw.CastSpell(seed)
 		if err != nil {
@@ -96,8 +99,31 @@ func StartWebServer(port int) {
 		json.NewEncoder(w).Encode(response)
 	})
 
+	// ngrok トンネルの開始 (NGROK_AUTHTOKEN がある場合のみ)
+	if token := os.Getenv("NGROK_AUTHTOKEN"); token != "" {
+		go func() {
+			l, err := ngrok.Listen(context.Background(),
+				config.HTTPEndpoint(),
+				ngrok.WithAuthtoken(token),
+			)
+			if err != nil {
+				fmt.Printf("Failed to start ngrok: %v\n", err)
+				return
+			}
+			fmt.Printf("\n====================================================\n")
+			fmt.Printf("NGROK TUNNEL ESTABLISHED!\n")
+			fmt.Printf("PUBLIC URL: %s\n", l.URL())
+			fmt.Printf("====================================================\n\n")
+			if err := http.Serve(l, mux); err != nil {
+				fmt.Printf("ngrok server closed: %v\n", err)
+			}
+		}()
+	} else {
+		fmt.Println("NGROK_AUTHTOKEN not set. Running on local port only.")
+	}
+
 	fmt.Printf("Goemon Swarm Console started at http://localhost:%d\n", port)
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 }
 
 func getImages(dir string) []string {
