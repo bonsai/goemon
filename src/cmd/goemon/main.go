@@ -64,7 +64,12 @@ func main() {
 	image.StartWorkers(bakerConfig, watcherConfig)
 
 	// Start Web Console (in background)
-	go web.StartWebServer(8080)
+	portStr := os.Getenv("PORT")
+	port := 8080
+	if portStr != "" {
+		fmt.Sscanf(portStr, "%d", &port)
+	}
+	go web.StartWebServer(port)
 
 	reader := bufio.NewReader(os.Stdin)
 
