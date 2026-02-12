@@ -8,7 +8,6 @@ import (
 	"goemon/src/core/db"
 	"goemon/src/core/mail"
 	"html/template"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -57,14 +56,14 @@ func StartWebServer(port int) {
 		}
 
 		fmt.Printf("Web Request: Baking %d images with prompt: %s\n", count, prompt)
-		
+
 		mailConfig := mail.GetDefaultConfig()
 		mailConfig.User = "user@mail.local"
-		
+
 		for i := 0; i < count; i++ {
-			// mail.SendPrompt(mailConfig, "baker@mail.local", "/draw", prompt)
+			mail.SendPrompt(mailConfig, "baker@mail.local", "/draw", prompt)
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -72,9 +71,9 @@ func StartWebServer(port int) {
 	mux.HandleFunc("/api/vlm", func(w http.ResponseWriter, r *http.Request) {
 		path := r.FormValue("path")
 		query := r.FormValue("query")
-		
+
 		fmt.Printf("Web Request: VLM Question on %s: %s\n", path, query)
-		
+
 		response := map[string]string{
 			"answer": fmt.Sprintf("I see the image '%s'. Regarding your question '%s', it looks like a high-quality AI generated artifact.", path, query),
 		}
@@ -84,9 +83,9 @@ func StartWebServer(port int) {
 	// API: GLM (GLM-4) - テキスト生成
 	mux.HandleFunc("/api/glm", func(w http.ResponseWriter, r *http.Request) {
 		seed := r.FormValue("seed")
-		
+
 		fmt.Printf("Web Request: GLM Generation with seed: %s\n", seed)
-		
+
 		sw := agent.NewSpellWriter(db.GlobalVectorDB)
 		text, err := sw.CastSpell(seed)
 		if err != nil {
