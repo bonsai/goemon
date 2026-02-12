@@ -29,8 +29,9 @@ python3 download_models.py
 
 # 2. Go アプリケーションのビルド
 echo "Step 2: Building Goemon..."
-# ビルド済みバイナリがあり、かつソースに変更がない場合はスキップしたいが、
-# Kaggle 環境では毎回ビルドしても時間はかからないため、確実性を優先
+# 依存関係の解決
+go mod tidy
+
 go build -o goemon src/cmd/goemon/main.go
 chmod +x goemon
 

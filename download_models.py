@@ -4,8 +4,10 @@ from huggingface_hub import snapshot_download
 def download_models():
     models = {
         "moondream2": "vikhyatk/moondream2",
-        "anything-v5": "stablediffusionapi/anything-v5",
-        "glm-4-9b-chat": "THUDM/glm-4-9b-chat" # 例としてGLM-4を指定
+        # GLM-4-9B と Anything-V5 は巨大（15GB〜）なため、Kaggleのディスク制限(20GB)に引っかかる可能性があります。
+        # 必要最小限のモデルから開始することをお勧めします。
+        # "anything-v5": "stablediffusionapi/anything-v5",
+        # "glm-4-9b-chat": "THUDM/glm-4-9b-chat"
     }
     
     base_path = "./models"
