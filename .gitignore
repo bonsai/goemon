@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Data & DB (VLM Agent)
+data/
+vlm_db/
+vlm_watch/
+mail_in/
+mail_out/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Models (Large Files)
+models/
+*.pth
+*.bin
+*.onnx
