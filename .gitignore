@@ -17,6 +17,7 @@ mail_out/
 .idea/
 .DS_Store
 Thumbs.db
+docs/memo
 
 # Models (Large Files)
 models/

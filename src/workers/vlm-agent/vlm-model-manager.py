@@ -2,6 +2,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from PIL import Image
 import os
+import fitz  # PyMuPDF
 
 class MoondreamManager:
     """
@@ -40,6 +41,21 @@ class MoondreamManager:
         """
         prompt = "Read all the text visible in this image and list it."
         return self.analyze_image(image_path, prompt)
+
+    def extract_text_from_pdf(self, pdf_path):
+        """
+        PDFからテキストを抽出する
+        """
+        print(f">>> Extracting text from PDF: {pdf_path}")
+        text = ""
+        try:
+            doc = fitz.open(pdf_path)
+            for page in doc:
+                text += page.get_text()
+            doc.close()
+        except Exception as e:
+            print(f"[!] Error reading PDF: {e}")
+        return text
 
 if __name__ == "__main__":
     # テスト実行

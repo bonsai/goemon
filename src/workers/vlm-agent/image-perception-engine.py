@@ -15,26 +15,38 @@ class ImagePerceptionEngine:
         self.vlm = MoondreamManager()
         self.output_dir = "c:/Users/dance/zone/uniai/data/vlm_db"
 
-    def perceive(self, image_path):
+    def perceive(self, file_path):
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == ".pdf":
+            return self.perceive_pdf(file_path)
+        else:
+            return self.perceive_image(file_path)
+
+    def perceive_image(self, image_path):
         print(f">>> Processing image: {image_path}")
-        
         # 1. 画像の説明を生成
         description = self.vlm.analyze_image(image_path, "Describe what is happening in this image.")
-        
         # 2. テキスト（OCR）を抽出
         ocr_text = self.vlm.extract_text(image_path)
-        
-        # 3. メタデータの構築
+        return self._create_and_save_metadata(image_path, description, ocr_text)
+
+    def perceive_pdf(self, pdf_path):
+        print(f">>> Processing PDF: {pdf_path}")
+        # PDFからテキストを直接抽出
+        ocr_text = self.vlm.extract_text_from_pdf(pdf_path)
+        # 最初の100文字程度を説明の代わりに使う（将来的に要約LLMを入れると良い）
+        description = f"PDF Document: {ocr_text[:200]}..."
+        return self._create_and_save_metadata(pdf_path, description, ocr_text)
+
+    def _create_and_save_metadata(self, source_file, description, ocr_text):
         metadata = {
-            "source_file": image_path,
-            "filename": os.path.basename(image_path),
+            "source_file": source_file,
+            "filename": os.path.basename(source_file),
             "timestamp": datetime.now().isoformat(),
             "description": description,
             "ocr_text": ocr_text,
             "tags": self._generate_tags(description, ocr_text)
         }
-        
-        # 4. JSONとして保存
         self._save_metadata(metadata)
         return metadata
 

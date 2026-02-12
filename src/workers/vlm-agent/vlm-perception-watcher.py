@@ -40,7 +40,7 @@ class VlmPerceptionWatcher:
             time.sleep(10)
 
     def _check_new_images(self):
-        files = [f for f in os.listdir(self.watch_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        files = [f for f in os.listdir(self.watch_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.pdf'))]
         for f in files:
             image_path = os.path.join(self.watch_dir, f)
             metadata_path = os.path.join(self.db_dir, f"{f}.json")
