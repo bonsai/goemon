@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.trae/
+.VSX/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+
+# Logs and temp files
+*.log
+*.eml
+*.tmp
+
+# OS files
+.DS_Store
+desktop.ini
+Thumbs.db
+
+# Project specific (Integrated into UniAI structure)
+src/workers/*/outputs/
+src/workers/*/models/
+src/workers/*/maildata/
+data/
+vlm_db/
+vlm_watch/
+mail_in/
+mail_out/
+sd_requests/
+
+# Config files
+.env
+*.ini
+
+# Docker files (not needed in image)
+src/workers/Docker_Setter/
+Dockerfile*
+docker-compose*
+.dockerignore
+with-gordon

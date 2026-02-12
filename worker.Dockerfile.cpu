@@ -1,0 +1,46 @@
+FROM python:3.10-slim
+
+# Set Python to unbuffered mode to see logs immediately
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install system dependencies in a single layer
+RUN apt-get update && apt-get install -y \
+    git \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install CPU-only torch (much smaller, ~200MB instead of ~900MB)
+RUN pip install --no-cache-dir \
+    --timeout 1000 \
+    --retries 5 \
+    torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install other ML packages
+RUN pip install --no-cache-dir \
+    accelerate \
+    diffusers \
+    pillow \
+    safetensors \
+    transformers
+
+# Additional dependencies for VLM and other features
+RUN pip install --no-cache-dir \
+    einops \
+    timm \
+    sentencepiece
+
+# Copy source code from new structure
+# Note: Build context is project root
+COPY Concierge/main.py \
+     Concierge/manager.py \
+     ./
+COPY Image_Baker/baker.py \
+     Image_Baker/inspector.py \
+     ./
+COPY Mail_Manager/postman.py ./
+
+# Run the script
+CMD ["python", "main.py"]

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goemon Web Swarm</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ffcc; padding-bottom: 10px; margin-bottom: 20px; }
+        h1 { color: #00ffcc; margin: 0; }
+        .grid-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        
+        .panel { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #888; font-size: 0.9em; }
+        input[type="text"], textarea { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #00ffcc; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #00ccaa; }
+
+        .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .image-card { background: #252525; padding: 10px; border-radius: 8px; border: 1px solid #333; position: relative; }
+        .image-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; cursor: pointer; }
+        .image-card:hover { border-color: #00ffcc; }
+        .image-info { font-size: 0.7em; color: #666; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .vlm-panel { position: sticky; top: 20px; }
+        #vlm-preview { width: 100%; border-radius: 8px; margin-bottom: 10px; display: none; }
+        .result-box { background: #000; padding: 10px; border-radius: 6px; border-left: 3px solid #00ffcc; min-height: 50px; font-size: 0.9em; margin-top: 10px; white-space: pre-wrap; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 10px; }
+        .tab { padding: 5px 15px; background: #333; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+        .tab.active { background: #00ffcc; color: black; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Goemon Console</h1>
+            <div id="status-light" style="display: flex; align-items: center; gap: 8px; font-size: 0.8em; color: #00ffcc;">
+                <span style="width: 10px; height: 10px; background: #00ffcc; border-radius: 50%;"></span> Swarm Active
+            </div>
+        </header>
+
+        <div class="grid-layout">
+            <div class="main-column">
+                <!-- T2I Section -->
+                <div class="panel" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Image Generation (Anything V5)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="t2i-prompt" placeholder="Describe what you want to bake...">
+                            <button style="width: 150px;" onclick="castSpell()">Bake 9</button>
+                        </div>
+                    </div>
+                    <div class="gallery" id="main-gallery">
+                        <!-- Images will be loaded here -->
+                        {{range .Images}}
+                        <div class="image-card" onclick="selectForVLM('{{.}}')">
+                            <img src="/outputs/{{.}}" alt="AI Artifact">
+                            <div class="image-info">{{.}}</div>
+                        </div>
+                        {{else}}
+                        <div style="grid-column: span 3; text-align: center; padding: 40px; color: #444;">No artifacts found. Start baking!</div>
+                        {{end}}
+                    </div>
+                </div>
+
+                <!-- GLM Section -->
+                <div class="panel">
+                    <div class="form-group">
+                        <label>Random Text Generation (GLM-4)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="glm-seed" placeholder="Enter seed word or topic...">
+                            <button style="width: 150px;" onclick="generateText()">Generate</button>
+                        </div>
+                        <div id="glm-result" class="result-box">GLM response will appear here...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <!-- VLM Section -->
+                <div class="panel vlm-panel">
+                    <label>VLM Perception (Moondream2)</label>
+                    <img id="vlm-preview" src="" alt="Selected Image">
+                    <input type="hidden" id="selected-image-path">
+                    <textarea id="vlm-query" rows="3" placeholder="Ask a question about the selected image..."></textarea>
+                    <button style="margin-top: 10px;" onclick="askVLM()">Ask Perception</button>
+                    <div id="vlm-result" class="result-box">VLM analysis will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectForVLM(path) {
+            document.getElementById('vlm-preview').src = '/outputs/' + path;
+            document.getElementById('vlm-preview').style.display = 'block';
+            document.getElementById('selected-image-path').value = path;
+            document.getElementById('vlm-query').focus();
+        }
+
+        async function castSpell() {
+            const prompt = document.getElementById('t2i-prompt').value;
+            if (!prompt) return;
+            
+            // 9枚生成リクエスト
+            fetch('/api/draw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'prompt=' + encodeURIComponent(prompt) + '&count=9'
+            });
+            alert('Baking 9 images started! Please wait...');
+        }
+
+        async function generateText() {
+            const seed = document.getElementById('glm-seed').value;
+            const resultBox = document.getElementById('glm-result');
+            resultBox.innerText = "Generating text...";
+            
+            const response = await fetch('/api/glm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'seed=' + encodeURIComponent(seed)
+            });
+            const data = await response.json();
+            resultBox.innerText = data.text;
+        }
+
+        async function askVLM() {
+            const path = document.getElementById('selected-image-path').value;
+            const query = document.getElementById('vlm-query').value;
+            const resultBox = document.getElementById('vlm-result');
+            
+            if (!path || !query) {
+                alert('Please select an image and enter a question.');
+                return;
+            }
+
+            resultBox.innerText = "Analyzing image...";
+            const response = await fetch('/api/vlm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'path=' + encodeURIComponent(path) + '&query=' + encodeURIComponent(query)
+            });
+            const data = await response.json();
+            resultBox.innerText = data.answer;
+        }
+
+        // 5秒おきにギャラリーだけ更新
+        setInterval(async () => {
+            const response = await fetch('/api/images');
+            const images = await response.json();
+            const gallery = document.getElementById('main-gallery');
+            
+            if (images.length > 0) {
+                gallery.innerHTML = images.map(img => `
+                    <div class="image-card" onclick="selectForVLM('${img}')">
+                        <img src="/outputs/${img}" alt="AI Artifact">
+                        <div class="image-info">${img}</div>
+                    </div>
+                `).join('');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

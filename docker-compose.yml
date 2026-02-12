@@ -1,0 +1,68 @@
+services:
+  mailserver:
+    image: mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: mx.mail.local
+    domainname: mail.local
+    ports:
+      - "25:25"
+      - "143:143"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - src/workers/Mail_Manager/server_data/maildata:/var/mail
+      - src/workers/Mail_Manager/server_data/mailstate:/var/mail-state
+      - src/workers/Mail_Manager/server_data/config:/tmp/docker-mailserver
+    environment:
+      - ENABLE_SPAMASSASSIN=0
+      - ENABLE_CLAMAV=0
+      - ENABLE_AMAVIS=0
+      - ENABLE_FAIL2BAN=1
+      - ENABLE_POSTGREY=0
+      - ONE_DIR=1
+      - DMS_DEBUG=0
+      - OVERRIDE_HOSTNAME=mx.mail.local
+    restart: always
+
+  goemon:
+    build:
+      context: .
+      dockerfile: goemon.Dockerfile
+    container_name: goemon-orchestrator
+    depends_on:
+      - mailserver
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    environment:
+      - IMAP_SERVER=mailserver
+      - SMTP_SERVER=mailserver
+      - SMTP_PORT=587
+      - MAIL_USER=user@mail.local
+      - MAIL_PASS=password
+    restart: always
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
+    container_name: sd-worker
+    depends_on:
+      - mailserver
+    volumes:
+      - ./models:/app/models
+      - src/workers/Image_Baker/outputs:/app/outputs
+    environment:
+      - IMAP_SERVER=mailserver
+      - SMTP_SERVER=mailserver
+      - SMTP_PORT=587
+      - MAIL_USER=user@mail.local
+      - MAIL_PASS=password
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    restart: always

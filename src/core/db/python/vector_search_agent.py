@@ -2,9 +2,9 @@ import os
 import json
 import numpy as np
 
-class MemoryVectorStore:
+class VectorMemoryAgent:
     """
-    メタデータの検索とベクトル管理（簡易版）
+    メタデータの検索とベクトル管理を行うエージェント
     """
     def __init__(self):
         self.db_dir = "c:/Users/dance/zone/uniai/data/vlm_db"

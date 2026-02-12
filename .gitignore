@@ -5,12 +5,18 @@ __pycache__/
 venv/
 .venv/
 
-# Data & DB (VLM Agent)
+# Data & DB (VLM & SDML Agent)
 data/
+docs/
 vlm_db/
 vlm_watch/
 mail_in/
 mail_out/
+sd_requests/
+outputs/
+maildata/
+mailstate/
+config/
 
 # IDE & OS
 .vscode/
@@ -18,6 +24,18 @@ mail_out/
 .DS_Store
 Thumbs.db
 docs/memo
+desktop.ini
+
+# IDE Extensions (Trae/VSCode)
+.VSX/
+.trae/
+
+# Project Specific
+*.eml
+*.log
+*.ini
+*.tmp
+with-gordon
 
 # Models (Large Files)
 models/
