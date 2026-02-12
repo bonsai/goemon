@@ -17,8 +17,6 @@ outputs/
 maildata/
 mailstate/
 config/
-KAGGLE_NOTE.md 
-
 # IDE & OS
 .vscode/
 .idea/
