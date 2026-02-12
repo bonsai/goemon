@@ -1,13 +1,18 @@
 import os
 from kaggle_secrets import UserSecretsClient
+from IPython import get_ipython
 
 # --- 1. 環境変数のセットアップ ---
 user_secrets = UserSecretsClient()
+ipython = get_ipython()
 
 def set_env_secret(env_name, secret_name):
     val = user_secrets.get_secret(secret_name)
     if val:
         os.environ[env_name] = val
+        # Jupyter/Kaggle のシェル環境にも確実に反映させる
+        if ipython:
+            ipython.run_line_magic('env', f'{env_name}={val}')
         print(f"✅ {env_name} is set.")
     else:
         print(f"⚠️ {env_name} is NOT set in Kaggle Secrets.")

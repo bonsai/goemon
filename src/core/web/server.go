@@ -121,6 +121,7 @@ func StartWebServer(port int) {
 
 	// ngrok トンネルの開始 (NGROK_AUTHTOKEN がある場合のみ)
 	if token := os.Getenv("NGROK_AUTHTOKEN"); token != "" {
+		fmt.Println("NGROK_AUTHTOKEN found. Starting tunnel...")
 		go func() {
 			l, err := ngrok.Listen(context.Background(),
 				config.HTTPEndpoint(),

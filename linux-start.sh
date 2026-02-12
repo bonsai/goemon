@@ -45,5 +45,13 @@ fi
 
 # 3. Goemon 実行
 echo "Step 3: Launching Goemon Swarm..."
+
+# デバッグ: 環境変数の確認
+if [ -z "$NGROK_AUTHTOKEN" ]; then
+    echo "⚠️  [DEBUG] NGROK_AUTHTOKEN is EMPTY in bash."
+else
+    echo "✅ [DEBUG] NGROK_AUTHTOKEN is set in bash."
+fi
+
 # Linux 環境に合わせた実行
 ./goemon
