@@ -7,16 +7,19 @@
 echo "Starting Goemon Swarm on Kaggle..."
 
 # 0. Go のインストール (Kaggle には標準で入っていないため)
+export GO_HOME="$HOME/opt/go"
+export PATH="$GO_HOME/bin:$PATH"
+
 if ! command -v go &> /dev/null; then
-    echo "Step 0: Installing Go..."
+    echo "Step 0: Installing Go locally..."
     GO_VERSION="1.22.0"
-    wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
+    mkdir -p "$HOME/opt"
+    wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+    tar -C "$HOME/opt" -xzf go${GO_VERSION}.linux-amd64.tar.gz
     rm go${GO_VERSION}.linux-amd64.tar.gz
     go version
 else
-    echo "Go is already installed."
+    echo "Go is already installed at $(command -v go)"
 fi
 
 # 1. モデルのダウンロード (GLM, Anything, Moondream2)
