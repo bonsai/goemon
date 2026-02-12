@@ -133,6 +133,9 @@ func StartWebServer(port int) {
 			fmt.Printf("NGROK TUNNEL ESTABLISHED!\n")
 			fmt.Printf("PUBLIC URL: %s\n", l.URL())
 
+			// URLをファイルに保存 (Python側で読み取るため)
+			os.WriteFile("ngrok_url.txt", []byte(l.URL()), 0644)
+
 			// QRコードの表示 (モバイル用)
 			qr, err := qrcode.New(l.URL()+"?pass=1234", qrcode.Medium)
 			if err == nil {

@@ -37,4 +37,39 @@ else:
 # --- 3. 実行権限の付与と起動 ---
 # スクリプト自体が重複チェック（Goのインストール、モデルの存在確認）を行っています
 !chmod +x linux-start.sh
+
+# --- 4. ngrok URL の監視と表示 ---
+import time
+import threading
+from IPython.display import display, HTML
+
+def watch_ngrok_url():
+    url_file = 'ngrok_url.txt'
+    # 古いファイルがあれば消しておく
+    if os.path.exists(url_file):
+        os.remove(url_file)
+        
+    print("⏳ Waiting for ngrok URL...")
+    while True:
+        if os.path.exists(url_file):
+            try:
+                with open(url_file, 'r') as f:
+                    url = f.read().strip()
+                if url:
+                    display(HTML(f"""
+                        <div style="padding:20px; background-color:#e1f5fe; border-radius:10px; border:2px solid #01579b; margin:20px 0;">
+                            <h2 style="color:#01579b; margin-top:0;">🚀 Goemon Swarm Online!</h2>
+                            <p>Mobile/Public URL: <a href="{url}?pass=1234" target="_blank" style="font-size:1.2em; font-weight:bold; color:#d81b60;">{url}</a></p>
+                            <p style="font-size:0.9em; color:#555;">(Auto-login pass included)</p>
+                        </div>
+                    """))
+                    break
+            except Exception as e:
+                pass
+        time.sleep(1)
+
+# 監視スレッドを開始
+threading.Thread(target=watch_ngrok_url, daemon=True).start()
+
+# 起動
 !bash linux-start.sh

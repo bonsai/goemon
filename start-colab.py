@@ -44,4 +44,36 @@ else:
 
 # --- 3. 実行権限の付与と起動 ---
 !chmod +x linux-start.sh
+
+# --- 4. ngrok URL の監視と表示 ---
+import time
+import threading
+from IPython.display import display, HTML
+
+def watch_ngrok_url():
+    url_file = 'ngrok_url.txt'
+    if os.path.exists(url_file):
+        os.remove(url_file)
+        
+    print("⏳ Waiting for ngrok URL...")
+    while True:
+        if os.path.exists(url_file):
+            try:
+                with open(url_file, 'r') as f:
+                    url = f.read().strip()
+                if url:
+                    display(HTML(f"""
+                        <div style="padding:20px; background-color:#f1f8e9; border-radius:10px; border:2px solid #33691e; margin:20px 0;">
+                            <h2 style="color:#33691e; margin-top:0;">🚀 Goemon Swarm Online! (Colab)</h2>
+                            <p>Mobile/Public URL: <a href="{url}?pass=1234" target="_blank" style="font-size:1.2em; font-weight:bold; color:#d81b60;">{url}</a></p>
+                            <p style="font-size:0.9em; color:#555;">(Auto-login pass included)</p>
+                        </div>
+                    """))
+                    break
+            except Exception as e:
+                pass
+        time.sleep(1)
+
+threading.Thread(target=watch_ngrok_url, daemon=True).start()
+
 !bash linux-start.sh
