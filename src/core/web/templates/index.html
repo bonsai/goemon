@@ -5,32 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Goemon Web Swarm</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 10px; }
         .container { max-width: 1200px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ffcc; padding-bottom: 10px; margin-bottom: 20px; }
-        h1 { color: #00ffcc; margin: 0; }
-        .grid-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { color: #00ffcc; margin: 0; font-size: 1.5em; }
+        .grid-layout { display: flex; flex-direction: column; gap: 15px; }
         
-        .panel { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        @media (min-width: 768px) {
+            .grid-layout { display: grid; grid-template-columns: 1fr 300px; }
+            body { padding: 20px; }
+            h1 { font-size: 2em; }
+        }
+
+        .panel { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #888; font-size: 0.9em; }
-        input[type="text"], textarea { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #00ffcc; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #00ccaa; }
-
-        .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .image-card { background: #252525; padding: 10px; border-radius: 8px; border: 1px solid #333; position: relative; }
-        .image-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; cursor: pointer; }
-        .image-card:hover { border-color: #00ffcc; }
-        .image-info { font-size: 0.7em; color: #666; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .vlm-panel { position: sticky; top: 20px; }
-        #vlm-preview { width: 100%; border-radius: 8px; margin-bottom: 10px; display: none; }
-        .result-box { background: #000; padding: 10px; border-radius: 6px; border-left: 3px solid #00ffcc; min-height: 50px; font-size: 0.9em; margin-top: 10px; white-space: pre-wrap; }
+        label { display: block; margin-bottom: 8px; color: #888; font-size: 0.9em; font-weight: bold; }
+        input[type="text"], textarea { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 8px; box-sizing: border-box; font-size: 16px; } /* font-size 16px prevents iOS zoom */
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 10px; }
-        .tab { padding: 5px 15px; background: #333; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
-        .tab.active { background: #00ffcc; color: black; }
+        .btn-group { display: flex; gap: 8px; }
+        button { flex: 1; padding: 12px; background: #00ffcc; color: black; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 1em; }
+        button.secondary { background: #333; color: #00ffcc; border: 1px solid #00ffcc; }
+        button:hover { opacity: 0.8; }
+        button:active { transform: scale(0.98); }
+
+        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (min-width: 480px) { .gallery { grid-template-columns: repeat(3, 1fr); } }
+        
+        .image-card { background: #252525; padding: 5px; border-radius: 8px; border: 1px solid #333; position: relative; }
+        .image-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; cursor: pointer; display: block; }
+        .image-card.selected { border-color: #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+        .image-info { font-size: 0.6em; color: #555; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+
+        .vlm-panel { position: relative; }
+        @media (min-width: 768px) { .vlm-panel { position: sticky; top: 20px; } }
+        
+        #vlm-preview { width: 100%; border-radius: 8px; margin-bottom: 10px; display: none; border: 1px solid #444; }
+        .result-box { background: #000; padding: 12px; border-radius: 8px; border-left: 4px solid #00ffcc; min-height: 40px; font-size: 0.9em; margin-top: 10px; white-space: pre-wrap; line-height: 1.4; }
+        
+        .loading-dots:after { content: ' .'; animation: dots 1s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
     </style>
 </head>
 <body>
@@ -45,18 +58,21 @@
         <div class="grid-layout">
             <div class="main-column">
                 <!-- T2I Section -->
-                <div class="panel" style="margin-bottom: 20px;">
+                <div class="panel" style="margin-bottom: 15px;">
                     <div class="form-group">
                         <label>Image Generation (Anything V5)</label>
-                        <div style="display: flex; gap: 10px;">
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
                             <input type="text" id="t2i-prompt" placeholder="Describe what you want to bake...">
-                            <button style="width: 150px;" onclick="castSpell()">Bake 9</button>
+                            <div class="btn-group">
+                                <button onclick="castSpell(1)">Bake 1</button>
+                                <button onclick="castSpell(9)">Bake 9</button>
+                            </div>
                         </div>
                     </div>
                     <div class="gallery" id="main-gallery">
                         <!-- Images will be loaded here -->
                         {{range .Images}}
-                        <div class="image-card" onclick="selectForVLM('{{.}}')">
+                        <div class="image-card" onclick="selectForVLM('{{.}}', this)">
                             <img src="/outputs/{{.}}" alt="AI Artifact">
                             <div class="image-info">{{.}}</div>
                         </div>
@@ -94,24 +110,45 @@
     </div>
 
     <script>
-        function selectForVLM(path) {
+        function selectForVLM(path, element) {
+            document.querySelectorAll('.image-card').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
             document.getElementById('vlm-preview').src = '/outputs/' + path;
             document.getElementById('vlm-preview').style.display = 'block';
             document.getElementById('selected-image-path').value = path;
-            document.getElementById('vlm-query').focus();
+            
+            // On mobile, scroll to VLM panel
+            if (window.innerWidth < 768) {
+                document.querySelector('.vlm-panel').scrollIntoView({ behavior: 'smooth' });
+            }
         }
 
-        async function castSpell() {
-            const prompt = document.getElementById('t2i-prompt').value;
+        async function castSpell(count) {
+            const promptInput = document.getElementById('t2i-prompt');
+            const prompt = promptInput.value;
             if (!prompt) return;
             
-            // 9枚生成リクエスト
-            fetch('/api/draw', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'prompt=' + encodeURIComponent(prompt) + '&count=9'
-            });
-            alert('Baking 9 images started! Please wait...');
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Baking...";
+            
+            try {
+                await fetch('/api/draw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'prompt=' + encodeURIComponent(prompt) + '&count=' + count
+                });
+                promptInput.value = '';
+            } catch (e) {
+                alert('Error starting bake');
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }, 1000);
+            }
         }
 
         async function generateText() {
@@ -156,7 +193,7 @@
             
             if (images.length > 0) {
                 gallery.innerHTML = images.map(img => `
-                    <div class="image-card" onclick="selectForVLM('${img}')">
+                    <div class="image-card" onclick="selectForVLM('${img}', this)">
                         <img src="/outputs/${img}" alt="AI Artifact">
                         <div class="image-info">${img}</div>
                     </div>
