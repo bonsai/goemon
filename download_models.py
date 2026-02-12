@@ -4,8 +4,9 @@ from huggingface_hub import snapshot_download
 def download_models():
     models = {
         "moondream2": "vikhyatk/moondream2",
-        # GLM-4-9B と Anything-V5 は巨大（15GB〜）なため、Kaggleのディスク制限(20GB)に引っかかる可能性があります。
-        # 必要最小限のモデルから開始することをお勧めします。
+        # GLM-4-9B (約15GB) や Anything-V5 (約4GB) は巨大です。
+        # ディスク制限 (Kaggle: 20GB永続 / Colab: 15GB共有) を考慮し、
+        # 必要に応じてコメントを外して使用してください。
         # "anything-v5": "stablediffusionapi/anything-v5",
         # "glm-4-9b-chat": "THUDM/glm-4-9b-chat"
     }
