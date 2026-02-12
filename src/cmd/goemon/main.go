@@ -47,8 +47,12 @@ func main() {
 		}
 	}()
 
-	// Initialize Image Service
-	image.InitImageService("C:/models/vlm/moondream2")
+	// Initialize Image Service (Platform aware path)
+	modelPath := "C:/models/vlm/moondream2"
+	if os.PathSeparator == '/' {
+		modelPath = "./models/moondream2"
+	}
+	image.InitImageService(modelPath)
 
 	// Start Image Workers (in background)
 	bakerConfig := mail.GetDefaultConfig()
