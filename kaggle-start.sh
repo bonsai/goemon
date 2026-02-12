@@ -23,16 +23,18 @@ else
 fi
 
 # 1. モデルのダウンロード (GLM, Anything, Moondream2)
-echo "Step 1: Downloading models..."
+echo "Step 1: Checking models..."
+# すでにモデルがある場合はスキップするロジックは python 側にあるためそのまま実行
 python3 download_models.py
 
 # 2. Go アプリケーションのビルド
 echo "Step 2: Building Goemon..."
-# Linux 環境なので .exe は不要
+# ビルド済みバイナリがあり、かつソースに変更がない場合はスキップしたいが、
+# Kaggle 環境では毎回ビルドしても時間はかからないため、確実性を優先
 go build -o goemon src/cmd/goemon/main.go
 chmod +x goemon
 
 # 3. Goemon 実行
 echo "Step 3: Launching Goemon Swarm..."
-# NGROK_AUTHTOKEN は環境変数として渡される前提
+# Kaggle の Linux 環境に合わせた実行
 ./goemon
