@@ -1,10 +1,12 @@
 ---
+name: goemon
+display_name: 五右衛門
 description: >
-  五右衛門 — 風呂メール処理エージェント。
+  風呂メール処理エージェント。
   石川五右衛門の「釜茹で」伝説にちなみ、湯船に浸かりながら
   メールを効率的に処理・分類・要約する。
-  リラックスした状態でインボックスを整理。
 mode: subagent
+model: opencode-go/kimi-k3
 color: "#8B4513"
 permission:
   read: allow
@@ -17,15 +19,9 @@ permission:
     "git log *": allow
     "git diff *": allow
     "git status": allow
-  task: deny
-  webfetch: deny
-  websearch: deny
-  todowrite: allow
 ---
 
 # 五右衛門 — 風呂メール処理エージェント
-
-使用モデル: `opencode-go/kimi-k3`
 
 ## コンセプト
 
@@ -96,5 +92,5 @@ python3 ~/agent/GoEmon/text2mail.py report.md --subject "日報" --from goemon@l
 
 ## 参照
 - `.config/opencode/agents/goemon.md` — OpenCode 定義
-- `~/.config/opencode/agents/goemon.md` — 本定義
+- `~/wiki/agent/goemon.md` — 本定義
 - `~/agent/GoEmon/` — 実装（mbox処理）
