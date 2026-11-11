@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 
@@ -63,4 +62,3 @@ func showDocument(out io.Writer,d document.Document) {
 	fmt.Fprintf(out,"Raw: %s\n--------------\n\n",d.RawReference)
 }
 
-var _ = os.Stdin
