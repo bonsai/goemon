@@ -1,0 +1,24 @@
+name: Go Reader CI
+
+on:
+  push:
+    branches: [main, "refactor/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
+          cache: true
+      - name: Test Reader packages and CLI
+        run: go test ./internal/... ./src/cmd/goemon
+      - name: Build CLI
+        run: go build -o goemon ./src/cmd/goemon
