@@ -2,6 +2,8 @@ package sqlite
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -45,7 +47,8 @@ func (r Reader) ReadAll(ctx context.Context) ([]document.Document, error) {
 				switch v:=values[i].(type) { case []byte: record[c]=string(v); default: record[c]=v }
 			}
 			raw,err:=json.Marshal(record); if err!=nil{rows.Close();return nil,err}
-			out=append(out,document.Document{ID:fmt.Sprintf("sqlite:%s:%d",table,len(out)+1),Source:"sqlite",SourceID:table,Title:table,Body:string(raw),ContentType:"application/json",Metadata:map[string]any{"table":table,"record":record},RawReference:r.Path})
+			sum:=sha256.Sum256(raw)
+			out=append(out,document.Document{ID:fmt.Sprintf("sqlite:%s:%s",table,hex.EncodeToString(sum[:])),Source:"sqlite",SourceID:table,Title:table,Body:string(raw),ContentType:"application/json",Metadata:map[string]any{"table":table,"record":record},RawReference:r.Path})
 		}
 		if err:=rows.Err(); err!=nil{rows.Close();return nil,err}; rows.Close()
 	}
