@@ -16,6 +16,8 @@ permissions:
   actions: read
   checks: read
   pull-requests: read
+safe-outputs:
+  create-issue: false
 tools:
   github:
     toolsets: [actions, pull_requests, repos]
