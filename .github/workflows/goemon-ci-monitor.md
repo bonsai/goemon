@@ -3,7 +3,7 @@ name: Goemon CI Monitor
 description: Monitor the Reader CI for Goemon PR #15 and report status changes.
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - daily
   workflow_run:
     workflows: ["Go Reader CI"]
     types: [completed]
