@@ -1,6 +1,7 @@
 package eml
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -21,11 +22,13 @@ func (r Reader) ReadAll(ctx context.Context) ([]document.Document, error) {
 	f, err := os.Open(r.Path)
 	if err != nil { return nil, err }
 	defer f.Close()
-	msg, err := mail.ReadMessage(f)
+	raw, err := io.ReadAll(f)
+	if err != nil { return nil, err }
+	msg, err := mail.ReadMessage(bytes.NewReader(raw))
 	if err != nil { return nil, err }
 	body, err := io.ReadAll(msg.Body)
 	if err != nil { return nil, err }
-	sum := sha256.Sum256(body)
+	sum := sha256.Sum256(raw)
 	var created *time.Time
 	if date, e := msg.Header.Date(); e == nil { created = &date }
 	meta := map[string]any{
