@@ -1,183 +1,71 @@
 package main
 
 import (
-	"bufio"
+	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
-	"goemon/src/cmd/cli"
-	"goemon/src/core/agent"
-	"goemon/src/core/db"
-	"goemon/src/core/image"
-	"goemon/src/core/mail"
-	"goemon/src/core/web"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
+
+	"goemon/internal/cli"
+	"goemon/internal/document"
+	"goemon/internal/reader"
+	"goemon/internal/reader/eml"
+	jsonlreader "goemon/internal/reader/jsonl"
+	sqlitereader "goemon/internal/reader/sqlite"
 )
 
 func main() {
-	// Initialize Global DB (Image)
-	if err := db.InitGlobalDB(); err != nil {
-		fmt.Printf("Warning: Could not initialize Image DB: %v\n", err)
-	}
-	defer func() {
-		if db.GlobalDB != nil {
-			db.GlobalDB.Close()
-		}
-	}()
+	if len(os.Args) < 2 { usage(); os.Exit(2) }
+	ctx := context.Background()
+	command := os.Args[1]
+	var docs []document.Document
+	var err error
 
-	// Initialize Global DB (Mail)
-	if err := db.InitGlobalMailDB(); err != nil {
-		fmt.Printf("Warning: Could not initialize Mail DB: %v\n", err)
-	}
-	defer func() {
-		if db.GlobalMailDB != nil {
-			db.GlobalMailDB.Close()
-		}
-	}()
-
-	// Initialize Global DB (Vector)
-	if err := db.InitGlobalVectorDB(); err != nil {
-		fmt.Printf("Warning: Could not initialize Vector DB: %v\n", err)
-	}
-	defer func() {
-		if db.GlobalVectorDB != nil {
-			db.GlobalVectorDB.Close()
-		}
-	}()
-
-	// Initialize Image Service (Platform aware path)
-	modelPath := "C:/models/vlm/moondream2"
-	if os.PathSeparator == '/' {
-		modelPath = "./models/moondream2"
-	}
-	image.InitImageService(modelPath)
-
-	// Start Image Workers (in background)
-	bakerConfig := mail.GetDefaultConfig()
-	bakerConfig.User = agent.GetAgentEmail("baker")
-
-	watcherConfig := mail.GetDefaultConfig()
-	watcherConfig.User = agent.GetAgentEmail("watcher")
-
-	image.StartWorkers(bakerConfig, watcherConfig)
-
-	// Start Web Console (in background)
-	portStr := os.Getenv("PORT")
-	port := 8080
-	if portStr != "" {
-		fmt.Sscanf(portStr, "%d", &port)
-	}
-	go web.StartWebServer(port)
-
-	reader := bufio.NewReader(os.Stdin)
-
-	for {
-		showMenu()
-		fmt.Print("Select option: ")
-		choice, _ := reader.ReadString('\n')
-		choice = strings.TrimSpace(choice)
-
-		switch choice {
-		// --- System & Infrastructure ---
-		case "1":
-			cli.RunDashboard()
-		case "2":
-			cli.ShowDataMetrics()
-		case "3":
-			fmt.Println("Restarting system...")
-			runCommand("docker-compose", "down", "--remove-orphans")
-			runCommand("docker-compose", "build")
-			runCommand("docker-compose", "up", "-d")
-			fmt.Println("Waiting for Mail Server to initialize (15s)...")
-			time.Sleep(15 * time.Second)
-			fmt.Println("Setting up default email account...")
-			runCommand("docker", "exec", "mailserver", "setup", "email", "add", "user@mail.local", "password")
-			fmt.Println("System Rebuild Complete.")
-
-		// --- Mail Operations ---
-		case "4":
-			fmt.Println("Receiving mail...")
-			cli.RunMailReceiverUI()
-		case "5":
-			cli.RunMailSenderUI()
-		case "6":
-			runCommand("docker", "logs", "-f", "mailserver", "--tail", "50")
-
-		// --- AI Workers & Agents ---
-		case "7":
-			cli.CheckWorkerStatus()
-		case "8":
-			listModels()
-		case "9":
-			runCommand("docker", "logs", "-f", "sd-worker", "--tail", "50")
-		case "10":
-			fmt.Println("Starting Foreman Agent (Background logic)...")
-			go agent.StartForeman()
-			fmt.Println("Foreman is running.")
-
-		// --- Development & Others ---
-		case "0":
-			fmt.Println("Goodbye!")
-			return
+	switch command {
+	case "read", "browse":
+		if len(os.Args) < 4 { usage(); os.Exit(2) }
+		switch os.Args[2] {
+		case "eml":
+			docs, err = (eml.Reader{Path:os.Args[3]}).ReadAll(ctx)
+		case "jsonl":
+			docs, err = (jsonlreader.Reader{Path:os.Args[3]}).ReadAll(ctx)
+		case "sqlite":
+			fs:=flag.NewFlagSet("sqlite",flag.ExitOnError)
+			table:=fs.String("table","","table name")
+			limit:=fs.Int("limit",1000,"maximum rows per table")
+			_ = fs.Parse(os.Args[4:])
+			docs,err=(sqlitereader.Reader{Path:os.Args[3],Table:*table,Limit:*limit}).ReadAll(ctx)
 		default:
-			fmt.Println("\033[91mInvalid option\033[0m")
+			usage(); os.Exit(2)
 		}
+	case "export":
+		if len(os.Args)<3 || os.Args[2]!="jsonl" { usage(); os.Exit(2) }
+		fs:=flag.NewFlagSet("export",flag.ExitOnError)
+		input:=fs.String("input","","input JSONL")
+		_ = fs.Parse(os.Args[3:])
+		if *input=="" { fmt.Fprintln(os.Stderr,"export jsonl requires --input"); os.Exit(2) }
+		docs,err=(jsonlreader.Reader{Path:*input}).ReadAll(ctx)
+	default:
+		usage(); os.Exit(2)
+	}
 
-		fmt.Println("\nPress Enter to continue...")
-		reader.ReadString('\n')
+	if err!=nil { fmt.Fprintln(os.Stderr,"goemon:",err); os.Exit(1) }
+	if command=="browse" {
+		if err:=cli.Browse(docs,os.Stdin,os.Stdout); err!=nil { fmt.Fprintln(os.Stderr,"goemon:",err); os.Exit(1) }
+		return
+	}
+	enc:=json.NewEncoder(os.Stdout)
+	enc.SetEscapeHTML(false)
+	for _,d:=range docs {
+		if err:=enc.Encode(d); err!=nil { fmt.Fprintln(os.Stderr,err); os.Exit(1) }
 	}
 }
 
-func showMenu() {
-	fmt.Print("\033[H\033[2J")
-	fmt.Println("=== Goemon Core Command Center ===")
-
-	fmt.Println("\n[ System & Infrastructure ]")
-	fmt.Println(" 1. System Dashboard (Live)")
-	fmt.Println(" 2. Data Metrics (Taijukei)")
-	fmt.Println(" 3. Restart System (Compose Up)")
-
-	fmt.Println("\n[ Mail Operations ]")
-	fmt.Println(" 4. Receive Mail (Download Images)")
-	fmt.Println(" 5. Send Prompt (Email)")
-	fmt.Println(" 6. Mail Server Logs (Follow)")
-
-	fmt.Println("\n[ AI Workers & Agents ]")
-	fmt.Println(" 7. SD Worker Status (Detailed)")
-	fmt.Println(" 8. List Models")
-	fmt.Println(" 9. SD Worker Logs (Follow)")
-	fmt.Println("10. Start Foreman Agent")
-
-	fmt.Println("\n[ Development & Others ]")
-	fmt.Println(" 0. Exit")
-	fmt.Println("=================================")
+func usage() {
+	fmt.Fprintln(os.Stderr,"goemon read <eml|jsonl|sqlite> <source> | browse <eml|jsonl|sqlite> <source> [--table name] [--limit n] | export jsonl --input <file>")
 }
 
-func runCommand(name string, arg ...string) {
-	cmd := exec.Command(name, arg...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	cmd.Run()
-}
-
-func listModels() {
-	modelDir := filepath.Join("src", "workers", "Image_Baker", "models")
-	fmt.Printf("Checking models in: %s\n", modelDir)
-
-	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			fmt.Printf("- %-30s (%d MB)\n", info.Name(), info.Size()/(1024*1024))
-		}
-		return nil
-	})
-
-	if err != nil {
-		fmt.Printf("Error listing models: %v\n", err)
-	}
-}
+var _ reader.Reader = eml.Reader{}
+var _ reader.Reader = jsonlreader.Reader{}
+var _ reader.Reader = sqlitereader.Reader{}

@@ -1,48 +1,64 @@
-# Goemon: Local AI Concierge Swarm
+# Goemon Reader
 
-Unified Multi-Modal Agent framework integrating TTS, SD, ML, and VLM, orchestrated by Go.
+Goemon is a read-only, multi-source reader for mail, EML, SQLite, JSONL and web documents. It normalizes source records into a common Document shape so CLI and future UI/API clients can use the same data model.
 
-## Vision
-"General Purpose AI Concierge" - A locally operated swarm of specialized small models fulfilling complex creative requests via a Mail-driven architecture. Goemon serves as the brain (Orchestrator) and nervous system (Mail/DB) for the underlying AI muscles.
+Agent orchestration, worker lifecycle management and image generation are intentionally outside this repository's target responsibility. Those capabilities belong in `bons.ai-swarm`.
 
-## Architecture
-- **Orchestrator (Go)**: Handles high-concurrency tasks like mail monitoring, file system watching, database management, and worker process control.
-- **Workers (Python)**: Executes heavy ML inference tasks (Stable Diffusion, Moondream2 VLM, GLM-based prompt generation).
-- **Communication**: Asynchronous agent-to-agent communication via a local Mail (IMAP/SMTP) protocol.
+## Status
 
-## Directory Structure
-- `src/cmd/goemon/`: Main entry point and CLI Command Center.
-- `src/cmd/cli/`: Interactive UI tools (Dashboard, Mail UI, Metrics).
-- `src/core/agent/`: Agent definitions (Foreman, SpellWriter, MailAgent).
-- `src/core/db/`: Persistent storage (SQLite for Image, Mail, and Vector data).
-- `src/core/bridge/`: Go-Python integration bridge.
-- `src/workers/`: Specialized AI task workers.
-- `docs/adr/`: Architecture Decision Records.
+The Reader foundation currently includes:
+- Common `document.Document` type and `reader.Reader` contract
+- EML file reader
+- JSONL streaming reader
+- SQLite read-only reader
+- CLI output as JSONL
+- Interactive filter → result list → detail browsing (`browse`)
 
-## Swarm of Agents
-- **Foreman ([foreman.go](src/core/agent/foreman.go))**: System orchestrator and background logic controller.
-- **SpellWriter ([spell-writer.go](src/core/agent/spell-writer.go))**: Prompt generator that "steals" fragments from memory (`vec.db`) and requests GLM to cast new spells.
-- **Image Service ([service.go](src/core/image/service.go))**: Manages T2I (Baker) and I2T (Watcher) worker lifecycle.
-- **Mail Agent ([mail-agent.go](src/core/agent/mail-agent.go))**: Handles agent-specific mailbox logic and identity.
+Web reading, true live incremental fuzzy matching, full-text indexing, richer MIME attachment extraction and a dedicated HTTP API remain follow-up work.
 
-## Databases
-- `imagestack.db`: Metadata for generated images and their lifecycle.
-- `mail.db`: Persistent record of all agent communications.
-- `vec.db`: Vector-ready storage for long-term memory fragments.
+## Commands
 
-## Usage
-Build the Goemon Command Center:
-```bash
-go build -o goemon.exe ./src/cmd/goemon
-./goemon.exe
+```sh
+go run ./src/cmd/goemon read eml ./mail/example.eml
+go run ./src/cmd/goemon read jsonl ./data/documents.jsonl
+go run ./src/cmd/goemon read sqlite ./data/archive.db
+go run ./src/cmd/goemon read sqlite ./data/archive.db --table messages --limit 200
+go run ./src/cmd/goemon browse jsonl ./data/documents.jsonl
+go run ./src/cmd/goemon browse sqlite ./data/archive.db --table messages
+go run ./src/cmd/goemon export jsonl --input ./data/documents.jsonl
 ```
 
-The CLI menu provides access to:
-1.  **System Dashboard**: Real-time monitoring of workers and mail.
-2.  **Mail Interface**: Manually send prompts or receive generated artifacts.
-3.  **Data Metrics**: Visualize the system's "Taijukei" (Growth metrics).
-4.  **Foreman Control**: Start/Stop the background orchestration logic.
+All commands emit one normalized JSON document per output line. Errors are written to stderr and return a non-zero exit code.
+
+## Document shape
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable or content-derived identifier |
+| `source` | Source adapter name |
+| `source_id` | Identifier within the source |
+| `title` | Human-readable title |
+| `body` | Text or serialized record body |
+| `content_type` | MIME/content type |
+| `created_at`, `updated_at` | Source timestamps, when available |
+| `metadata` | Source-specific fields |
+| `raw_reference` | Path or source locator; original data is not modified |
+
+## Design constraints
+
+- Readers never mutate source data.
+- SQLite is opened in read-only/query-only mode.
+- JSONL is processed line by line; malformed input reports its line number.
+- Secrets must come from external configuration, never source constants.
+- Raw source records remain the authority; normalized Documents are a read model.
 
 ## Development
-- **Design Decisions**: Refer to [docs/adr/](docs/adr/) for detailed architectural evolution.
-- **Python Bridge**: Worker-specific logic often resides in `python/` subdirectories within core packages.
+
+```sh
+go test ./...
+go build ./src/cmd/goemon
+```
+
+Browse mode prompts for a filter, lists matching records, and opens a selected record's detail view. It uses portable line input; it is not yet a raw-keypress fuzzy finder.
+
+See [docs/architecture.md](docs/architecture.md) for the intended package boundaries and [docs/adr/](docs/adr/) for decisions.
