@@ -7,6 +7,9 @@ on:
   workflow_run:
     workflows: ["Go Reader CI"]
     types: [completed]
+    branches:
+      - refactor/reader-cleanup
+      - main
   workflow_dispatch:
 permissions:
   contents: read
