@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 	"net/mail"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,8 +34,8 @@ func (r Reader) ReadAll(ctx context.Context) ([]document.Document, error) {
 	if date, e := msg.Header.Date(); e == nil { created = &date }
 	meta := map[string]any{
 		"from": msg.Header.Get("From"),
-		"to": msg.Header.Values("To"),
-		"cc": msg.Header.Values("Cc"),
+		"to": textproto.MIMEHeader(msg.Header).Values("To"),
+		"cc": textproto.MIMEHeader(msg.Header).Values("Cc"),
 		"message_id": msg.Header.Get("Message-ID"),
 	}
 	return []document.Document{{
