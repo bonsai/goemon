@@ -12,8 +12,9 @@ The Reader foundation currently includes:
 - JSONL streaming reader
 - SQLite read-only reader
 - CLI output as JSONL
+- Interactive filter → result list → detail browsing (`browse`)
 
-Web reading, interactive fuzzy selection, full-text indexing, richer MIME attachment extraction and a dedicated HTTP API remain follow-up work.
+Web reading, true live incremental fuzzy matching, full-text indexing, richer MIME attachment extraction and a dedicated HTTP API remain follow-up work.
 
 ## Commands
 
@@ -22,6 +23,8 @@ go run ./src/cmd/goemon read eml ./mail/example.eml
 go run ./src/cmd/goemon read jsonl ./data/documents.jsonl
 go run ./src/cmd/goemon read sqlite ./data/archive.db
 go run ./src/cmd/goemon read sqlite ./data/archive.db --table messages --limit 200
+go run ./src/cmd/goemon browse jsonl ./data/documents.jsonl
+go run ./src/cmd/goemon browse sqlite ./data/archive.db --table messages
 go run ./src/cmd/goemon export jsonl --input ./data/documents.jsonl
 ```
 
@@ -55,5 +58,7 @@ All commands emit one normalized JSON document per output line. Errors are writt
 go test ./...
 go build ./src/cmd/goemon
 ```
+
+Browse mode prompts for a filter, lists matching records, and opens a selected record's detail view. It uses portable line input; it is not yet a raw-keypress fuzzy finder.
 
 See [docs/architecture.md](docs/architecture.md) for the intended package boundaries and [docs/adr/](docs/adr/) for decisions.
